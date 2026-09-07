@@ -1,0 +1,568 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  // connection URL: prisma7.config.ts (CLI) / lib/prisma.ts (runtime adapter)
+}
+
+// ------------------------------------------------------------
+// Enums
+// ------------------------------------------------------------
+
+enum RoleType {
+  DIRECTEUR
+  EDUCATEUR
+  INFIRMIER
+  ASSISTANT
+}
+
+enum StatutResidence {
+  PRESENT
+  PARTI
+}
+
+enum StatutProcedure {
+  EN_PROCEDURE // annexe 26, en attente de décision CGRA
+  RECOURS_EN_COURS // devant le CCE
+  PROTECTION_SUBSIDIAIRE
+  REFUGIE_RECONNU
+  STATUT_22BIS // statut interne au centre
+  SORTIE_NATURALISE
+  SORTIE_CHANGEMENT_CENTRE
+  SORTIE_REFUS
+}
+
+enum StatutSocial {
+  CELIBATAIRE
+  MARIE
+  DIVORCE
+  VEUF
+  SEPARE
+}
+
+enum StatutProfessionnel {
+  SANS_EMPLOI
+  EN_RECHERCHE_EMPLOI
+  EN_FORMATION
+  EMPLOYE
+  INDEPENDANT
+  BENEVOLE_CENTRE
+}
+
+enum StatutCaravane {
+  DISPONIBLE
+  NON_DISPONIBLE
+}
+
+enum StatutProbleme {
+  OUVERT
+  RESOLU
+}
+
+enum StatutNavette {
+  PREVUE
+  TERMINEE
+}
+
+enum StatutActivite {
+  CONFIRMEE
+  EN_ATTENTE
+  REFUSEE
+  TERMINEE
+}
+
+enum StatutPaiement {
+  A_PAYER
+  PAYE
+}
+
+enum TypeReunion {
+  QUOTIDIENNE
+  HEBDOMADAIRE
+  SPECIALE
+}
+
+enum TypeRendezVousMedical {
+  INDIVIDUEL
+  GROUPE // arrivée groupée d'un spécialiste (kiné, ONE...)
+}
+
+enum TypeTicket {
+  TRAIN
+  BUS
+}
+
+enum StatutTicket {
+  DISPONIBLE
+  ATTRIBUE
+}
+
+enum StatutAbonnement {
+  ACTIF
+  EXPIRE
+}
+
+// ------------------------------------------------------------
+// Employés
+// ------------------------------------------------------------
+
+model Employe {
+  id        String     @id @default(cuid())
+  nom       String
+  prenom    String
+  email     String     @unique
+  telephone String?
+  roles     RoleType[]
+  clerkId   String?    @unique
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  residentsInscrits    Resident[] @relation("ResidentInscritPar")
+  residentsDesinscrits Resident[] @relation("ResidentDesinscritPar")
+
+  caravanesResponsable Caravane[]         @relation("CaravaneResponsables")
+  problemesSignales    CaravaneProbleme[] @relation("ProblemeSignalePar")
+  problemesResolus     CaravaneProbleme[] @relation("ProblemeResoluPar")
+
+  navettesConduites    Navette[] @relation("NavetteChauffeur")
+  navettesAccompagnees Navette[] @relation("NavetteAccompagnateurs")
+  navettesCreees       Navette[] @relation("NavetteCreePar")
+
+  activitesCreees    Activite[] @relation("ActiviteCreePar")
+  activitesEncadrees Activite[] @relation("ActiviteEducateurs")
+  activitesValidees  Activite[] @relation("ActiviteValideePar")
+
+  travauxCrees TravailRemunere[] @relation("TravailCreePar")
+
+  reunionsCreees Reunion[] @relation("ReunionCreePar")
+
+  journalEntreesCreees JournalEntree[] @relation("JournalCreePar")
+
+  rendezVousMedicauxCrees RendezVousMedical[] @relation("RdvMedicalCreePar")
+
+  rendezVousCrees RendezVous[] @relation("RendezVousCreePar")
+
+  ticketsAttribues TicketTransport[]     @relation("TicketAttribuePar")
+  abonnementsCrees AbonnementTransport[] @relation("AbonnementCreePar")
+
+  auditLogs AuditLog[] @relation("AuditEmploye")
+
+  @@map("employes")
+}
+
+// ------------------------------------------------------------
+// Résidents
+// ------------------------------------------------------------
+
+model Resident {
+  id              String   @id @default(cuid())
+  nom             String
+  prenom          String
+  photo           String?
+  dateNaissance   DateTime
+  numeroRegistre  String   @unique
+  dateInscription DateTime @default(now())
+  paysOrigine     String
+  languesParlees  String[]
+  raisonRefuge    String?
+  email           String?
+  telephone       String?
+
+  occupation String?
+  profession String?
+
+  statutSocial        StatutSocial?
+  statutProfessionnel StatutProfessionnel?
+  statutResidence     StatutResidence  @default(PRESENT)
+  statutProcedure     StatutProcedure
+  archive             Boolean          @default(false)
+  dateDesinscription  DateTime?
+
+  caravaneId String?
+  caravane   Caravane? @relation(fields: [caravaneId], references: [id])
+
+  ecoleId String?
+  ecole   Ecole?  @relation(fields: [ecoleId], references: [id])
+
+  inscritParId String?
+  inscritPar   Employe? @relation("ResidentInscritPar", fields: [inscritParId], references: [id])
+
+  desinscritParId String?
+  desinscritPar   Employe? @relation("ResidentDesinscritPar", fields: [desinscritParId], references: [id])
+
+  liensFamilleDe   ResidentFamille[] @relation("ResidentPrincipal")
+  liensFamilleVers ResidentFamille[] @relation("ResidentApparente")
+
+  navettes           Navette[]
+  activites          Activite[]
+  travauxRemuneres   TravailRemunere[]
+  journalEntrees     JournalEntree[]
+  rendezVousMedicaux RendezVousMedical[]
+
+  rendezVous               RendezVous[]
+  ticketsTransport         TicketTransport[]
+  abonnementsTransport     AbonnementTransport[]
+  reunionsConcernees       Reunion[]
+  auditLogs                AuditLog[]                @relation("AuditResidentConcerne")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("residents")
+}
+
+// table de jonction explicite pour garder le type de lien (père, épouse...)
+model ResidentFamille {
+  id          String   @id @default(cuid())
+  residentId  String
+  resident    Resident @relation("ResidentPrincipal", fields: [residentId], references: [id])
+  apparenteId String
+  apparente   Resident @relation("ResidentApparente", fields: [apparenteId], references: [id])
+  lienParente String
+  createdAt   DateTime @default(now())
+
+  @@unique([residentId, apparenteId])
+  @@map("residents_famille")
+}
+
+// ------------------------------------------------------------
+// Caravanes
+// ------------------------------------------------------------
+
+model Caravane {
+  id                    String         @id @default(cuid())
+  nom                   String         @unique
+  capaciteMax           Int // informatif, non bloquant
+  statut                StatutCaravane @default(DISPONIBLE)
+  raisonIndisponibilite String?
+
+  residents    Resident[]
+  responsables Employe[]          @relation("CaravaneResponsables")
+  problemes    CaravaneProbleme[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("caravanes")
+}
+
+model CaravaneProbleme {
+  id          String         @id @default(cuid())
+  caravaneId  String
+  caravane    Caravane       @relation(fields: [caravaneId], references: [id])
+  description String
+  statut      StatutProbleme @default(OUVERT)
+
+  signaleParId    String
+  signalePar      Employe  @relation("ProblemeSignalePar", fields: [signaleParId], references: [id])
+  dateSignalement DateTime @default(now())
+
+  resoluParId    String?
+  resoluPar      Employe?  @relation("ProblemeResoluPar", fields: [resoluParId], references: [id])
+  dateResolution DateTime?
+
+  @@map("caravanes_problemes")
+}
+
+// ------------------------------------------------------------
+// Navettes
+// ------------------------------------------------------------
+
+model Navette {
+  id              String        @id @default(cuid())
+  lieuDepart      String
+  lieuArrivee     String
+  dateDepart      DateTime
+  heureDepart     String?
+  dateArrivee     DateTime?
+  heureArrivee    String?
+  vehicule        String?
+  motif           String?
+  limitePersonnes Int? // chauffeur + accompagnateurs + résidents
+  statut          StatutNavette @default(PREVUE)
+
+  chauffeurEmployeId String?
+  chauffeurEmploye   Employe? @relation("NavetteChauffeur", fields: [chauffeurEmployeId], references: [id])
+  chauffeurExterne   String?
+
+  accompagnateurs Employe[] @relation("NavetteAccompagnateurs")
+
+  creeParId String
+  creePar   Employe @relation("NavetteCreePar", fields: [creeParId], references: [id])
+
+  activiteId String?
+  activite   Activite? @relation(fields: [activiteId], references: [id])
+
+  residents Resident[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("navettes")
+}
+
+// ------------------------------------------------------------
+// Écoles
+// ------------------------------------------------------------
+
+model Ecole {
+  id        String  @id @default(cuid())
+  nom       String
+  adresse   String?
+  telephone String?
+  email     String?
+
+  residents Resident[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("ecoles")
+}
+
+// ------------------------------------------------------------
+// Activités
+// ------------------------------------------------------------
+
+model Activite {
+  id         String         @id @default(cuid())
+  nom        String
+  lieu       String?
+  dateDebut  DateTime
+  dateFin    DateTime?
+  heureDebut String?
+  heureFin   String?
+  budget     Decimal        @default(0) @db.Decimal(10, 2)
+  statut     StatutActivite @default(CONFIRMEE)
+
+  creeParId String
+  creePar   Employe @relation("ActiviteCreePar", fields: [creeParId], references: [id])
+
+  valideeParId   String?
+  valideePar     Employe?  @relation("ActiviteValideePar", fields: [valideeParId], references: [id])
+  dateValidation DateTime?
+
+  educateurs Employe[]  @relation("ActiviteEducateurs")
+  residents  Resident[]
+  navettes   Navette[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("activites")
+}
+
+// ------------------------------------------------------------
+// Travaux rémunérés
+// ------------------------------------------------------------
+
+model TravailRemunere {
+  id             String         @id @default(cuid())
+  titre          String
+  lieu           String?
+  dateDebut      DateTime
+  dateFin        DateTime?
+  heureDebut     String?
+  heureFin       String?
+  montant        Decimal        @db.Decimal(10, 2)
+  statutPaiement StatutPaiement @default(A_PAYER)
+
+  creeParId String
+  creePar   Employe @relation("TravailCreePar", fields: [creeParId], references: [id])
+
+  residents Resident[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("travaux_remuneres")
+}
+
+// ------------------------------------------------------------
+// Réunions
+// ------------------------------------------------------------
+
+model Reunion {
+  id                  String      @id @default(cuid())
+  titre               String
+  type                TypeReunion
+  lieu                String?
+  dateDebut           DateTime
+  heureDebut          String?
+  heureFin            String?
+  presenceObligatoire Boolean     @default(false)
+  notes               String?     @db.Text
+
+  residentConcerneId String?
+  residentConcerne   Resident? @relation(fields: [residentConcerneId], references: [id])
+
+  creeParId String
+  creePar   Employe @relation("ReunionCreePar", fields: [creeParId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("reunions")
+}
+
+// ------------------------------------------------------------
+// Journal
+// ------------------------------------------------------------
+
+model JournalEntree {
+  id      String   @id @default(cuid())
+  date    DateTime
+  contenu String   @db.Text
+
+  creeParId String
+  creePar   Employe @relation("JournalCreePar", fields: [creeParId], references: [id])
+
+  residentsTagues Resident[]
+
+  createdAt DateTime @default(now())
+
+  @@map("journal_entrees")
+}
+
+// ------------------------------------------------------------
+// Médecins
+// ------------------------------------------------------------
+
+model Medecin {
+  id             String  @id @default(cuid())
+  nom            String
+  prenom         String
+  specialisation String
+  telephone      String?
+  email          String?
+
+  rendezVous RendezVousMedical[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("medecins")
+}
+
+// ------------------------------------------------------------
+// Rendez-vous médicaux
+// ------------------------------------------------------------
+
+model RendezVousMedical {
+  id    String                @id @default(cuid())
+  type  TypeRendezVousMedical @default(INDIVIDUEL)
+  date  DateTime
+  heure String?
+  motif String
+  lieu  String?
+
+  medecinId String
+  medecin   Medecin @relation(fields: [medecinId], references: [id])
+
+  creeParId String
+  creePar   Employe @relation("RdvMedicalCreePar", fields: [creeParId], references: [id])
+
+  residents Resident[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("rendez_vous_medicaux")
+}
+
+// ------------------------------------------------------------
+// Rendez-vous
+// ------------------------------------------------------------
+
+model RendezVous {
+  id    String   @id @default(cuid())
+  motif String
+  date  DateTime
+  heure String?
+  lieu  String?
+
+  residentId String
+  resident   Resident @relation(fields: [residentId], references: [id])
+
+  creeParId String
+  creePar   Employe @relation("RendezVousCreePar", fields: [creeParId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("rendez_vous")
+}
+
+// ------------------------------------------------------------
+// Transports en commun
+// ------------------------------------------------------------
+
+model TicketTransport {
+  id        String       @id @default(cuid())
+  reference String       @unique
+  type      TypeTicket
+  statut    StatutTicket @default(DISPONIBLE)
+  raison    String?
+
+  residentId String?
+  resident   Resident? @relation(fields: [residentId], references: [id])
+
+  attribueParId   String?
+  attribuePar     Employe?  @relation("TicketAttribuePar", fields: [attribueParId], references: [id])
+  dateAttribution DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@map("tickets_transport")
+}
+
+model AbonnementTransport {
+  id                        String           @id @default(cuid())
+  type                      String
+  dateDebut                 DateTime
+  dateExpiration            DateTime
+  statut                    StatutAbonnement @default(ACTIF)
+  renouvellementAutomatique Boolean          @default(false)
+
+  residentId String
+  resident   Resident @relation(fields: [residentId], references: [id])
+
+  creeParId String?
+  creePar   Employe? @relation("AbonnementCreePar", fields: [creeParId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("abonnements_transport")
+}
+
+// ------------------------------------------------------------
+// Audit
+// ------------------------------------------------------------
+// append-only : lecture-seule
+
+model AuditLog {
+  id          String @id @default(cuid())
+  action      String
+  entiteType  String
+  entiteId    String
+  description String @db.Text
+
+  employeId String?
+  employe   Employe? @relation("AuditEmploye", fields: [employeId], references: [id])
+
+  residentConcerneId String?
+  residentConcerne   Resident? @relation("AuditResidentConcerne", fields: [residentConcerneId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@map("audit_logs")
+}
