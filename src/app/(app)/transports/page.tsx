@@ -1,8 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import { PageHeader } from "@/components/layout/page-header";
+import { CopyableText } from "@/components/shared/copyable-text";
+import { FilterField, FiltersPopover } from "@/components/shared/filters-popover";
+import { PersonLink } from "@/components/shared/person-link";
+import { RowActions } from "@/components/shared/row-actions";
+import { SearchSelect } from "@/components/shared/search-select";
+import { StatCard, StatCardGroup } from "@/components/shared/stat-card";
+import { paginate, TablePagination } from "@/components/shared/table-pagination";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
     Dialog,
@@ -13,23 +21,61 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table";
+import { mockResidents, type MockResident } from "@/lib/mock-data";
 
 // TODO: remplacer par un vrai fetch une fois le backend branché
-const stats = {
-    abonnementsActifs: 127,
-    abonnementsExpires: 79,
-    ticketsTrain: 12,
-    ticketsBus: 27,
-};
-
-const lignes = [
-    { id: "1", resident: "Jean Marc", type: "Ticket aller-retour", moyen: "Train", detail: "2 Tickets", ref: "1647, 4895" },
-    { id: "2", date: "17 Août 2026", type: "Ticket aller", moyen: "Train", detail: "12 Tickets", montant: "28.12 €", expire: "18/08/2026" },
-    { id: "3", date: "17 Août 2026", type: "Ticket aller", moyen: "Bus TEC", detail: "8 Tickets", montant: "18.78 €", expire: "17/08/2026" },
+const LIGNES_INITIALES = [
+    { id: "1", residentId: "1", type: "Ticket", moyen: "Train", reference: "1647", montant: "-", statut: "Attribué" },
+    { id: "2", residentId: "2", type: "Ticket", moyen: "Bus TEC", reference: "4895", montant: "-", statut: "Attribué" },
+    { id: "3", residentId: "3", type: "Abonnement", moyen: "Bus TEC", reference: "-", montant: "12.00 €", statut: "Actif", expire: "17/08/2026" },
+    { id: "4", residentId: "4", type: "Abonnement", moyen: "Train", reference: "-", montant: "28.12 €", statut: "Expiré", expire: "18/08/2025" },
 ];
 
+const FILTER_FIELDS: FilterField[] = [
+    { key: "type", label: "Type", options: [{ value: "Ticket", label: "Ticket" }, { value: "Abonnement", label: "Abonnement" }] },
+    { key: "statut", label: "Statut", options: [{ value: "Actif", label: "Actif" }, { value: "Attribué", label: "Attribué" }, { value: "Expiré", label: "Expiré" }] },
+];
+
+const PAGE_SIZE = 10;
+
 export default function Page() {
+    const [lignes, setLignes] = useState(LIGNES_INITIALES);
+    const [filtres, setFiltres] = useState<Record<string, string>>({});
+    const [page, setPage] = useState(1);
     const [dialogOuvert, setDialogOuvert] = useState(false);
+    const [resident, setResident] = useState<MockResident | null>(null);
+    const [reference, setReference] = useState("");
+    const [raison, setRaison] = useState("");
+
+    const filtrees = useMemo(() => {
+        return lignes.filter((l) => {
+            if (filtres.type && l.type !== filtres.type) return false;
+            if (filtres.statut && l.statut !== filtres.statut) return false;
+            return true;
+        });
+    }, [lignes, filtres]);
+
+    const { items, totalPages, currentPage } = paginate(filtrees, page, PAGE_SIZE);
+
+    function attribuer() {
+        if (!resident || !reference) return;
+        setLignes((prev) => [
+            { id: String(prev.length + 1), residentId: resident.id, type: "Ticket", moyen: "Train", reference, montant: "-", statut: "Attribué" },
+            ...prev,
+        ]);
+        setResident(null);
+        setReference("");
+        setRaison("");
+        setDialogOuvert(false);
+    }
 
     return (
         <>
@@ -37,168 +83,87 @@ export default function Page() {
                 title="Transports en commun"
                 toolbar={
                     <>
-                        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                            <div className="rounded-xl bg-emerald-50 px-5 py-3">
-                                <span className="text-sm text-emerald-700">
-                                    Abonnements actifs
-                                </span>
-                                <p className="text-2xl font-semibold text-emerald-700">
-                                    {stats.abonnementsActifs}
-                                </p>
-                            </div>
-                            <div className="rounded-xl bg-rose-50 px-5 py-3">
-                                <span className="text-sm text-rose-700">
-                                    Abonnements expirés
-                                </span>
-                                <p className="text-2xl font-semibold text-rose-700">
-                                    {stats.abonnementsExpires}
-                                </p>
-                            </div>
-                            <div className="rounded-xl border px-5 py-3">
-                                <span className="text-sm text-muted-foreground">
-                                    Tickets de trains
-                                </span>
-                                <p className="text-2xl font-semibold">
-                                    {stats.ticketsTrain}
-                                </p>
-                            </div>
-                            <div className="rounded-xl border px-5 py-3">
-                                <span className="text-sm text-muted-foreground">
-                                    Tickets de bus
-                                </span>
-                                <p className="text-2xl font-semibold">
-                                    {stats.ticketsBus}
-                                </p>
-                            </div>
-                        </div>
+                        <StatCardGroup>
+                            <StatCard label="Abonnements actifs" value={lignes.filter((l) => l.statut === "Actif").length} tone="success" />
+                            <StatCard label="Abonnements expirés" value={lignes.filter((l) => l.statut === "Expiré").length} tone="danger" />
+                            <StatCard label="Tickets de trains" value={lignes.filter((l) => l.moyen === "Train" && l.type === "Ticket").length} />
+                            <StatCard label="Tickets de bus" value={lignes.filter((l) => l.moyen === "Bus TEC" && l.type === "Ticket").length} />
+                        </StatCardGroup>
 
                         <div className="flex items-center justify-between gap-3">
-                            <div className="relative w-full max-w-sm">
-                                <span
-                                    className="material-symbols-rounded absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-                                    style={{ fontSize: 18 }}
-                                >
-                                    search
-                                </span>
-                                <Input
-                                    placeholder="Rechercher..."
-                                    className="pl-9"
-                                />
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <Button variant="secondary">Payés</Button>
-                                <Button variant="ghost">Expirés</Button>
-                                <Button variant="ghost">Voir tout</Button>
-                                <Button variant="outline">
-                                    <span
-                                        className="material-symbols-rounded"
-                                        style={{ fontSize: 16 }}
-                                    >
-                                        tune
-                                    </span>
-                                    Filtres
-                                </Button>
-                                <Button onClick={() => setDialogOuvert(true)}>
-                                    <span
-                                        className="material-symbols-rounded"
-                                        style={{ fontSize: 16 }}
-                                    >
-                                        add
-                                    </span>
-                                    Ajouter
-                                </Button>
-                            </div>
+                            <FiltersPopover fields={FILTER_FIELDS} values={filtres} onChange={(key, value) => { setFiltres((f) => ({ ...f, [key]: value })); setPage(1); }} onReset={() => setFiltres({})} />
+                            <Button onClick={() => setDialogOuvert(true)}>
+                                <span className="material-symbols-rounded" style={{ fontSize: 16 }}>add</span>
+                                Ajouter
+                            </Button>
                         </div>
                     </>
                 }
             />
 
             <div className="flex-1 overflow-auto px-6 pb-6">
-                <div className="flex flex-col">
-                    {lignes.map((ligne, i) => (
-                        <div
-                            key={ligne.id}
-                            className={`flex items-center justify-between py-4 text-sm ${i > 0 ? "border-t" : ""}`}
-                        >
-                            <div className="flex flex-col gap-1">
-                                {ligne.resident && (
-                                    <span className="font-medium">
-                                        {ligne.resident}
-                                    </span>
-                                )}
-                                {ligne.date && <span>{ligne.date}</span>}
-                                {ligne.expire && (
-                                    <span className="text-muted-foreground">
-                                        Jusqu&apos;au {ligne.expire}
-                                    </span>
-                                )}
-                            </div>
-                            <span>{ligne.type}</span>
-                            <span className="text-muted-foreground">
-                                {ligne.moyen}
-                            </span>
-                            <span>{ligne.detail}</span>
-                            {ligne.montant && <span>{ligne.montant}</span>}
-                            {ligne.ref && (
-                                <span className="text-muted-foreground">
-                                    {ligne.ref}
-                                </span>
-                            )}
-                            <button
-                                type="button"
-                                className="flex h-9 w-9 items-center justify-center rounded-full bg-zinc-900 text-white"
-                            >
-                                <span
-                                    className="material-symbols-rounded"
-                                    style={{ fontSize: 18 }}
-                                >
-                                    arrow_forward
-                                </span>
-                            </button>
-                        </div>
-                    ))}
-                </div>
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Résident</TableHead>
+                            <TableHead>Type</TableHead>
+                            <TableHead>Moyen</TableHead>
+                            <TableHead>Référence</TableHead>
+                            <TableHead>Montant</TableHead>
+                            <TableHead>Statut</TableHead>
+                            <TableHead />
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {items.map((ligne) => {
+                            const r = mockResidents.find((res) => res.id === ligne.residentId);
+                            return (
+                                <TableRow key={ligne.id} className="group">
+                                    <TableCell>{r && <PersonLink id={r.id} nom={`${r.prenom} ${r.nom}`} type="resident" />}</TableCell>
+                                    <TableCell>{ligne.type}</TableCell>
+                                    <TableCell>{ligne.moyen}</TableCell>
+                                    <TableCell>{ligne.reference !== "-" ? <CopyableText value={ligne.reference} /> : "-"}</TableCell>
+                                    <TableCell>{ligne.montant}</TableCell>
+                                    <TableCell>
+                                        <Badge variant={ligne.statut === "Expiré" ? "destructive" : "secondary"}>{ligne.statut}</Badge>
+                                    </TableCell>
+                                    <TableCell>
+                                        <RowActions
+                                            onDelete={() => setLignes((prev) => prev.filter((l) => l.id !== ligne.id))}
+                                            entityLabel="cette ligne"
+                                        />
+                                    </TableCell>
+                                </TableRow>
+                            );
+                        })}
+                    </TableBody>
+                </Table>
+
+                <TablePagination page={currentPage} totalPages={totalPages} basePath="/transports" />
             </div>
 
             <Dialog open={dialogOuvert} onOpenChange={setDialogOuvert}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>
-                            Attribuer un ticket / abonnement
-                        </DialogTitle>
+                        <DialogTitle>Attribuer un ticket / abonnement</DialogTitle>
                     </DialogHeader>
                     <div className="flex flex-col gap-4">
                         <div className="flex flex-col gap-2">
-                            <Label htmlFor="resident">Résident</Label>
-                            <Input
-                                id="resident"
-                                placeholder="Rechercher un résident"
-                            />
+                            <Label>Résident</Label>
+                            <SearchSelect options={mockResidents} value={resident} onValueChange={setResident} getId={(r) => r.id} getLabel={(r) => `${r.prenom} ${r.nom}`} placeholder="Rechercher un résident..." />
                         </div>
                         <div className="flex flex-col gap-2">
-                            <Label htmlFor="idTicket">
-                                ID ticket (ou expiration si abonnement)
-                            </Label>
-                            <Input id="idTicket" placeholder="Ex. T-002" />
+                            <Label htmlFor="reference">ID ticket / référence</Label>
+                            <Input id="reference" value={reference} onChange={(e) => setReference(e.target.value)} placeholder="Ex. T-002" />
                         </div>
                         <div className="flex flex-col gap-2">
                             <Label htmlFor="raison">Raison</Label>
-                            <Input
-                                id="raison"
-                                placeholder="Raison de l'attribution"
-                            />
+                            <Input id="raison" value={raison} onChange={(e) => setRaison(e.target.value)} />
                         </div>
                     </div>
                     <DialogFooter>
-                        <Button
-                            variant="outline"
-                            onClick={() => setDialogOuvert(false)}
-                        >
-                            Annuler
-                        </Button>
-                        <Button onClick={() => setDialogOuvert(false)}>
-                            Attribuer
-                        </Button>
+                        <Button variant="outline" onClick={() => setDialogOuvert(false)}>Annuler</Button>
+                        <Button onClick={attribuer}>Attribuer</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>

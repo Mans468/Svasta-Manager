@@ -1,27 +1,49 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 
 import { PageHeader } from "@/components/layout/page-header";
+import { NavetteFormDialog } from "@/components/navettes/navette-form-dialog";
+import { FilterField, FiltersPopover } from "@/components/shared/filters-popover";
+import { RowActions } from "@/components/shared/row-actions";
+import { paginate, TablePagination } from "@/components/shared/table-pagination";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-    Dialog,
-    DialogContent,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table";
+import { MOCK_NAVETTES } from "@/lib/mock-navettes";
 
-// TODO: remplacer par un vrai fetch une fois le backend branché
-const navettes = [
-    { id: "1", depart: "Centre Svasta", arrivee: "Parc Astérix", heureDepart: "13:55", dateDepart: "16/11/2025", heureArrivee: "", dateArrivee: "", chauffeur: "Natasha Smart", vehicule: "BMW 330i", terminee: false },
-    { id: "2", depart: "Centre Svasta", arrivee: "Parc Astérix", heureDepart: "13:55", dateDepart: "25 Nov", heureArrivee: "14:30", dateArrivee: "25 Nov", chauffeur: "Natasha Smart", vehicule: "BMW 330i", terminee: true },
+const FILTER_FIELDS: FilterField[] = [
+    { key: "statut", label: "Statut", options: [{ value: "Prévue", label: "Prévue" }, { value: "Terminée", label: "Terminée" }] },
 ];
 
+const PAGE_SIZE = 10;
+
 export default function Page() {
+    const router = useRouter();
+    const [navettes, setNavettes] = useState(MOCK_NAVETTES);
+    const [recherche, setRecherche] = useState("");
+    const [filtres, setFiltres] = useState<Record<string, string>>({});
+    const [page, setPage] = useState(1);
     const [dialogOuvert, setDialogOuvert] = useState(false);
+
+    const filtrees = useMemo(() => {
+        return navettes.filter((n) => {
+            if (filtres.statut && n.statut !== filtres.statut) return false;
+            if (recherche && !`${n.depart} ${n.arrivee}`.toLowerCase().includes(recherche.toLowerCase())) return false;
+            return true;
+        });
+    }, [navettes, filtres, recherche]);
+
+    const { items, totalPages, currentPage } = paginate(filtrees, page, PAGE_SIZE);
 
     return (
         <>
@@ -30,19 +52,11 @@ export default function Page() {
                 toolbar={
                     <div className="flex items-center justify-between gap-3">
                         <div className="relative w-full max-w-sm">
-                            <span className="material-symbols-rounded absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" style={{ fontSize: 18 }}>
-                                search
-                            </span>
-                            <Input placeholder="Rechercher..." className="pl-9" />
+                            <span className="material-symbols-rounded absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" style={{ fontSize: 18 }}>search</span>
+                            <Input placeholder="Rechercher..." className="pl-9" value={recherche} onChange={(e) => { setRecherche(e.target.value); setPage(1); }} />
                         </div>
                         <div className="flex items-center gap-2">
-                            <Button variant="secondary">Prévus</Button>
-                            <Button variant="ghost">Terminés</Button>
-                            <Button variant="ghost">Voir tout</Button>
-                            <Button variant="outline">
-                                <span className="material-symbols-rounded" style={{ fontSize: 16 }}>tune</span>
-                                Filtres
-                            </Button>
+                            <FiltersPopover fields={FILTER_FIELDS} values={filtres} onChange={(key, value) => { setFiltres((f) => ({ ...f, [key]: value })); setPage(1); }} onReset={() => setFiltres({})} />
                             <Button onClick={() => setDialogOuvert(true)}>
                                 <span className="material-symbols-rounded" style={{ fontSize: 16 }}>add</span>
                                 Ajouter
@@ -53,93 +67,52 @@ export default function Page() {
             />
 
             <div className="flex-1 overflow-auto px-6 pb-6">
-                <div className="flex flex-col">
-                    {navettes.map((navette, i) => (
-                        <div
-                            key={navette.id}
-                            className={`flex items-center justify-between py-4 ${i > 0 ? "border-t" : ""}`}
-                        >
-                            <div className="flex flex-col gap-1 text-sm">
-                                <span className="flex items-center gap-2">
-                                    <span
-                                        className={`material-symbols-rounded ${navette.terminee ? "text-emerald-600" : "text-muted-foreground"}`}
-                                        style={{ fontSize: 16 }}
-                                    >
-                                        {navette.terminee ? "check_circle" : "location_on"}
-                                    </span>
-                                    {navette.depart}
-                                </span>
-                                <span className="flex items-center gap-2">
-                                    <span
-                                        className={`material-symbols-rounded ${navette.terminee ? "text-emerald-600" : "text-muted-foreground"}`}
-                                        style={{ fontSize: 16 }}
-                                    >
-                                        {navette.terminee ? "check_circle" : "location_on"}
-                                    </span>
-                                    {navette.arrivee}
-                                </span>
-                            </div>
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Départ</TableHead>
+                            <TableHead>Arrivée</TableHead>
+                            <TableHead>Date</TableHead>
+                            <TableHead>Véhicule</TableHead>
+                            <TableHead>Passagers</TableHead>
+                            <TableHead>Statut</TableHead>
+                            <TableHead />
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {items.map((navette) => (
+                            <TableRow key={navette.id} className="group cursor-pointer" onClick={() => router.push(`/navettes/${navette.id}`)}>
+                                <TableCell>{navette.depart}</TableCell>
+                                <TableCell>{navette.arrivee}</TableCell>
+                                <TableCell>{navette.date} {navette.heureDepart}</TableCell>
+                                <TableCell>{navette.vehicule || "-"}</TableCell>
+                                <TableCell>{navette.residentIds.length}</TableCell>
+                                <TableCell>
+                                    <Badge variant={navette.statut === "Prévue" ? "default" : "secondary"}>{navette.statut}</Badge>
+                                </TableCell>
+                                <TableCell>
+                                    <RowActions
+                                        onView={() => router.push(`/navettes/${navette.id}`)}
+                                        onEdit={() => router.push(`/navettes/${navette.id}`)}
+                                        onDelete={() => setNavettes((prev) => prev.filter((n) => n.id !== navette.id))}
+                                        deleteBlocked={navette.statut === "Terminée"}
+                                        deleteBlockedReason="Une navette terminée ne peut pas être supprimée."
+                                        entityLabel="cette navette"
+                                    />
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
 
-                            <div className="flex flex-col gap-1 text-sm text-muted-foreground">
-                                <span className="flex items-center gap-2">
-                                    <span className="material-symbols-rounded" style={{ fontSize: 16 }}>near_me</span>
-                                    {navette.heureDepart} {navette.dateDepart && <span>{navette.dateDepart}</span>}
-                                </span>
-                                {navette.heureArrivee && (
-                                    <span className="flex items-center gap-2">
-                                        <span className="material-symbols-rounded" style={{ fontSize: 16 }}>flag</span>
-                                        {navette.heureArrivee} {navette.dateArrivee}
-                                    </span>
-                                )}
-                            </div>
-
-                            <div className="flex flex-col gap-1 text-sm text-muted-foreground">
-                                <span className="flex items-center gap-2">
-                                    <span className="material-symbols-rounded" style={{ fontSize: 16 }}>person</span>
-                                    {navette.chauffeur}
-                                </span>
-                                <span className="flex items-center gap-2">
-                                    <span className="material-symbols-rounded" style={{ fontSize: 16 }}>directions_car</span>
-                                    {navette.vehicule}
-                                </span>
-                            </div>
-
-                            <button
-                                type="button"
-                                className="flex h-9 w-9 items-center justify-center rounded-full bg-zinc-900 text-white"
-                            >
-                                <span className="material-symbols-rounded" style={{ fontSize: 18 }}>arrow_forward</span>
-                            </button>
-                        </div>
-                    ))}
-                </div>
+                <TablePagination page={currentPage} totalPages={totalPages} basePath="/navettes" />
             </div>
 
-            <Dialog open={dialogOuvert} onOpenChange={setDialogOuvert}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Nouvelle navette</DialogTitle>
-                    </DialogHeader>
-                    <div className="flex flex-col gap-4">
-                        <div className="flex flex-col gap-2">
-                            <Label htmlFor="date">Date / heure</Label>
-                            <Input id="date" type="datetime-local" />
-                        </div>
-                        <div className="flex flex-col gap-2">
-                            <Label htmlFor="chauffeur">Chauffeur</Label>
-                            <Input id="chauffeur" placeholder="Employé existant ou saisie libre" />
-                        </div>
-                        <div className="flex flex-col gap-2">
-                            <Label htmlFor="motif">Motif</Label>
-                            <Input id="motif" placeholder="Motif de la navette" />
-                        </div>
-                    </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setDialogOuvert(false)}>Annuler</Button>
-                        <Button onClick={() => setDialogOuvert(false)}>Créer</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+            <NavetteFormDialog
+                open={dialogOuvert}
+                onClose={() => setDialogOuvert(false)}
+                onCreate={(navette) => setNavettes((prev) => [navette, ...prev])}
+            />
         </>
     );
 }

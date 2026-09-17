@@ -1,20 +1,31 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { PageHeader } from "@/components/layout/page-header";
+import { mockEcoles, mockResidents } from "@/lib/mock-data";
+import { CopyableText } from "@/components/shared/copyable-text";
+import { RowActions } from "@/components/shared/row-actions";
+import { paginate, TablePagination } from "@/components/shared/table-pagination";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table";
 
-// TODO: remplacer par un vrai fetch une fois le backend branché
-const ecoles = [
-    { id: "1", nom: "Institut Saint-Michel Verviers", adresse: "Rue de l'école 46, 4800 Verviers", telephone: "+32 470 12 34 56", email: "info@saintmichelverviers.be", nbResidents: 103 },
-    { id: "2", nom: "Athénée Royale Thil Lorrain", adresse: "Rue de l'école 46, 4800 Verviers", telephone: "+32 470 12 34 56", email: "info@atheneeroyalethillorrain.be", nbResidents: 21 },
-    { id: "3", nom: "Athénée Royale Verdi", adresse: "Rue de l'école 46, 4800 Verviers", telephone: "+32 470 12 34 56", email: "info@atheneeroyaleverdi.be", nbResidents: 75 },
-];
+const PAGE_SIZE = 10;
 
 export default function Page() {
     const router = useRouter();
+    const [page, setPage] = useState(1);
+    const [ecoles, setEcoles] = useState(mockEcoles);
+    const { items, totalPages, currentPage } = paginate(ecoles, page, PAGE_SIZE);
 
     return (
         <>
@@ -23,60 +34,57 @@ export default function Page() {
                 toolbar={
                     <div className="flex items-center justify-between gap-3">
                         <div className="relative w-full max-w-sm">
-                            <span className="material-symbols-rounded absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" style={{ fontSize: 18 }}>
-                                search
-                            </span>
+                            <span className="material-symbols-rounded absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" style={{ fontSize: 18 }}>search</span>
                             <Input placeholder="Rechercher..." className="pl-9" />
                         </div>
-                        <div className="flex items-center gap-2">
-                            <Button variant="outline">
-                                <span className="material-symbols-rounded" style={{ fontSize: 16 }}>tune</span>
-                                Filtres
-                            </Button>
-                            <Button>
-                                <span className="material-symbols-rounded" style={{ fontSize: 16 }}>add</span>
-                                Ajouter
-                            </Button>
-                        </div>
+                        <Button>
+                            <span className="material-symbols-rounded" style={{ fontSize: 16 }}>add</span>
+                            Ajouter
+                        </Button>
                     </div>
                 }
             />
 
             <div className="flex-1 overflow-auto px-6 pb-6">
-                <table className="w-full text-sm">
-                    <thead>
-                        <tr className="text-left text-muted-foreground">
-                            <th className="py-2 font-normal">Nom</th>
-                            <th className="py-2 font-normal">Adresse</th>
-                            <th className="py-2 font-normal">Téléphone</th>
-                            <th className="py-2 font-normal">Email</th>
-                            <th className="py-2 font-normal">Nombre de résidents</th>
-                            <th className="py-2" />
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {ecoles.map((ecole) => (
-                            <tr
-                                key={ecole.id}
-                                className="group cursor-pointer border-t"
-                                onClick={() => router.push(`/ecoles/${ecole.id}`)}
-                            >
-                                <td className="py-3">{ecole.nom}</td>
-                                <td className="py-3 text-muted-foreground underline">{ecole.adresse}</td>
-                                <td className="py-3 text-muted-foreground underline">{ecole.telephone}</td>
-                                <td className="py-3 text-muted-foreground underline">{ecole.email}</td>
-                                <td className="py-3 underline">{ecole.nbResidents}</td>
-                                <td className="py-3">
-                                    <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100">
-                                        <span className="material-symbols-rounded text-muted-foreground" style={{ fontSize: 18 }}>visibility</span>
-                                        <span className="material-symbols-rounded text-muted-foreground" style={{ fontSize: 18 }}>edit</span>
-                                        <span className="material-symbols-rounded text-muted-foreground" style={{ fontSize: 18 }}>more_vert</span>
-                                    </div>
-                                </td>
-                            </tr>
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Nom</TableHead>
+                            <TableHead>Adresse</TableHead>
+                            <TableHead>Téléphone</TableHead>
+                            <TableHead>Email</TableHead>
+                            <TableHead>Résidents inscrits</TableHead>
+                            <TableHead />
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {items.map((ecole) => (
+                            <TableRow key={ecole.id} className="group cursor-pointer" onClick={() => router.push(`/ecoles/${ecole.id}`)}>
+                                <TableCell className="font-medium">{ecole.nom}</TableCell>
+                                <TableCell onClick={(e) => e.stopPropagation()} className="text-muted-foreground">
+                                    <CopyableText value={ecole.adresse} />
+                                </TableCell>
+                                <TableCell onClick={(e) => e.stopPropagation()}>
+                                    <CopyableText value={ecole.telephone} />
+                                </TableCell>
+                                <TableCell onClick={(e) => e.stopPropagation()}>
+                                    <CopyableText value={ecole.email} />
+                                </TableCell>
+                                <TableCell>{mockResidents.filter((r) => r.ecoleId === ecole.id).length}</TableCell>
+                                <TableCell>
+                                    <RowActions
+                                        onView={() => router.push(`/ecoles/${ecole.id}`)}
+                                        onEdit={() => router.push(`/ecoles/${ecole.id}`)}
+                                        onDelete={() => setEcoles((prev) => prev.filter((e) => e.id !== ecole.id))}
+                                        entityLabel="cette école"
+                                    />
+                                </TableCell>
+                            </TableRow>
                         ))}
-                    </tbody>
-                </table>
+                    </TableBody>
+                </Table>
+
+                <TablePagination page={currentPage} totalPages={totalPages} basePath="/ecoles" />
             </div>
         </>
     );

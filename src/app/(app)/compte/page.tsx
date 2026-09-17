@@ -1,8 +1,13 @@
-export default async function Page() {
+import { CompteForm } from "@/components/account/compte-form";
+import { PageHeader } from "@/components/layout/page-header";
+
+export default function Page() {
     return (
-        <div className="flex flex-col gap-4">
-            <h1 className="text-xl font-semibold">Compte</h1>
-            {/* TODO: même contenu que la modale, en pleine page */}
-        </div>
+        <>
+            <PageHeader title="Compte" />
+            <div className="max-w-md px-6 pb-6">
+                <CompteForm />
+            </div>
+        </>
     );
 }

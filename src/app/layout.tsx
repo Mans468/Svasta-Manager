@@ -1,4 +1,5 @@
 import { ClerkProvider } from "@clerk/nextjs";
+import { shadcn } from "@clerk/ui/themes";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Inter } from "next/font/google";
 import "./globals.css";
@@ -43,7 +44,16 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
                 />
             </head>
             <body className="min-h-full flex flex-col">
-                <ClerkProvider>
+                <ClerkProvider
+                    appearance={{
+                        theme: shadcn,
+                        variables: {
+                            colorPrimary: "#161616",
+                            fontFamily: "var(--font-sans)",
+                            borderRadius: "0.5rem",
+                        },
+                    }}
+                >
                     <TooltipProvider>{children}</TooltipProvider>
                 </ClerkProvider>
             </body>

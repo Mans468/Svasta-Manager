@@ -1,11 +1,12 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { use } from "react";
+import { use, useState } from "react";
 
+import { REUNIONS_INITIALES } from "@/lib/mock-reunions";
+import { ReunionDetailContent } from "@/components/reunions/reunion-detail-content";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
 import {
     Sheet,
     SheetContent,
@@ -21,35 +22,35 @@ export default function ReunionSheet({
 }) {
     const { reunionId } = use(params);
     const router = useRouter();
+    const reunion = REUNIONS_INITIALES.find((r) => r.id === reunionId);
+    const [notes, setNotes] = useState("");
 
     return (
-        <Sheet
-            open
-            onOpenChange={(open) => {
-                if (!open) router.back();
-            }}
-        >
+        <Sheet open onOpenChange={(open) => !open && router.back()}>
             <SheetContent side="right" className="w-full gap-6 sm:max-w-lg">
                 <SheetHeader>
-                    <SheetTitle>Réunion {reunionId}</SheetTitle>
+                    <SheetTitle>{reunion?.titre ?? "Réunion"}</SheetTitle>
                 </SheetHeader>
 
                 <div className="flex flex-col gap-6 px-4">
-                    <div className="flex flex-col gap-2">
-                        <Label htmlFor="titre">Titre</Label>
-                        <Input id="titre" placeholder="Titre de la réunion" />
-                    </div>
-
-                    <div className="flex flex-col gap-2">
-                        <Label htmlFor="notes">Notes</Label>
-                        <Textarea
-                            id="notes"
-                            placeholder="Notes prises en réunion..."
-                            rows={8}
-                        />
-                    </div>
-
-                    <Button>Enregistrer</Button>
+                    {reunion ? (
+                        <>
+                            <ReunionDetailContent reunion={reunion} />
+                            <Separator />
+                            <div className="flex flex-col gap-2">
+                                <span className="text-sm font-medium">Notes de réunion</span>
+                                <Textarea
+                                    rows={8}
+                                    value={notes}
+                                    onChange={(e) => setNotes(e.target.value)}
+                                    placeholder="Notes prises en réunion..."
+                                />
+                                <Button className="w-fit">Enregistrer</Button>
+                            </div>
+                        </>
+                    ) : (
+                        <p className="text-sm text-muted-foreground">Réunion introuvable ({reunionId}).</p>
+                    )}
                 </div>
             </SheetContent>
         </Sheet>

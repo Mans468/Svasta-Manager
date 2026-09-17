@@ -18,7 +18,7 @@ export default async function AppLayout({
 
     return (
         <SidebarProvider className="bg-zinc-100 dark:bg-zinc-950">
-            <AppSidebar/>
+            <AppSidebar variant="floating" />
             <SidebarInset>
                 {children}
                 {modal}

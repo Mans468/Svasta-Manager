@@ -148,8 +148,12 @@
 
 .agenda-calendar .fc {
     --fc-border-color: theme(colors.zinc.200);
-    --fc-today-bg-color: transparent;
+    --fc-today-bg-color: theme(colors.zinc.50);
     font-family: inherit;
+}
+.agenda-calendar .fc-scrollgrid {
+    border-radius: 0.75rem;
+    overflow: hidden;
 }
 .agenda-calendar .fc-col-header-cell {
     background: none;

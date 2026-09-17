@@ -2,8 +2,19 @@
 
 import Link from "next/link";
 import type { StaticImageData } from "next/image";
+import { useState } from "react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -40,8 +51,13 @@ function getInitials(name: string) {
 
 export function NavUser({ user }: NavUserProps) {
     const { isMobile } = useSidebar();
-    const avatarSrc =
-        typeof user.avatar === "string" ? user.avatar : user.avatar.src;
+    const [confirmationOuverte, setConfirmationOuverte] = useState(false);
+    const avatarSrc = typeof user.avatar === "string" ? user.avatar : user.avatar.src;
+
+    function seDeconnecter() {
+        // TODO: Clerk -> useClerk().signOut()
+        setConfirmationOuverte(false);
+    }
 
     return (
         <SidebarMenu>
@@ -57,22 +73,13 @@ export function NavUser({ user }: NavUserProps) {
                     >
                         <Avatar className="h-8 w-8 shrink-0 rounded-lg">
                             <AvatarImage src={avatarSrc} alt={user.name} />
-                            <AvatarFallback className="rounded-lg">
-                                {getInitials(user.name)}
-                            </AvatarFallback>
+                            <AvatarFallback className="rounded-lg">{getInitials(user.name)}</AvatarFallback>
                         </Avatar>
                         <div className="grid flex-1 text-left text-sm leading-tight">
-                            <span className="truncate font-medium">
-                                {user.name}
-                            </span>
-                            <span className="truncate text-xs text-muted-foreground">
-                                {user.email}
-                            </span>
+                            <span className="truncate font-medium">{user.name}</span>
+                            <span className="truncate text-xs text-muted-foreground">{user.email}</span>
                         </div>
-                        <span
-                            className="material-symbols-rounded ml-auto shrink-0 leading-none"
-                            style={{ fontSize: 18 }}
-                        >
+                        <span className="material-symbols-rounded ml-auto shrink-0 leading-none" style={{ fontSize: 18 }}>
                             unfold_more
                         </span>
                     </DropdownMenuTrigger>
@@ -87,21 +94,12 @@ export function NavUser({ user }: NavUserProps) {
                             <DropdownMenuLabel className="p-0 font-normal">
                                 <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                                     <Avatar className="h-8 w-8 shrink-0 rounded-lg">
-                                        <AvatarImage
-                                            src={avatarSrc}
-                                            alt={user.name}
-                                        />
-                                        <AvatarFallback className="rounded-lg">
-                                            {getInitials(user.name)}
-                                        </AvatarFallback>
+                                        <AvatarImage src={avatarSrc} alt={user.name} />
+                                        <AvatarFallback className="rounded-lg">{getInitials(user.name)}</AvatarFallback>
                                     </Avatar>
                                     <div className="grid flex-1 text-left text-sm leading-tight">
-                                        <span className="truncate font-medium text-accent-foreground">
-                                            {user.name}
-                                        </span>
-                                        <span className="truncate text-xs text-muted-foreground">
-                                            {user.email}
-                                        </span>
+                                        <span className="truncate font-medium text-accent-foreground">{user.name}</span>
+                                        <span className="truncate text-xs text-muted-foreground">{user.email}</span>
                                     </div>
                                 </div>
                             </DropdownMenuLabel>
@@ -110,28 +108,12 @@ export function NavUser({ user }: NavUserProps) {
                         <DropdownMenuSeparator />
 
                         <DropdownMenuGroup>
-                            <DropdownMenuItem
-                                className="flex items-center gap-2"
-                                render={<Link href="/compte" />}
-                            >
-                                <span
-                                    className="material-symbols-rounded shrink-0 leading-none"
-                                    style={{ fontSize: 18 }}
-                                >
-                                    person
-                                </span>
+                            <DropdownMenuItem className="flex items-center gap-2" render={<Link href="/compte" />}>
+                                <span className="material-symbols-rounded shrink-0 leading-none" style={{ fontSize: 18 }}>person</span>
                                 Compte
                             </DropdownMenuItem>
-                            <DropdownMenuItem
-                                className="flex items-center gap-2"
-                                render={<Link href="/parametres" />}
-                            >
-                                <span
-                                    className="material-symbols-rounded shrink-0 leading-none"
-                                    style={{ fontSize: 18 }}
-                                >
-                                    settings
-                                </span>
+                            <DropdownMenuItem className="flex items-center gap-2" render={<Link href="/parametres" />}>
+                                <span className="material-symbols-rounded shrink-0 leading-none" style={{ fontSize: 18 }}>settings</span>
                                 Paramètres
                             </DropdownMenuItem>
                         </DropdownMenuGroup>
@@ -142,22 +124,30 @@ export function NavUser({ user }: NavUserProps) {
                             <DropdownMenuItem
                                 variant="destructive"
                                 className="flex items-center gap-2"
-                                onSelect={() => {
-                                    // TODO: useClerk().signOut()
-                                }}
+                                onSelect={() => setConfirmationOuverte(true)}
                             >
-                                <span
-                                    className="material-symbols-rounded shrink-0 leading-none"
-                                    style={{ fontSize: 18 }}
-                                >
-                                    logout
-                                </span>
+                                <span className="material-symbols-rounded shrink-0 leading-none" style={{ fontSize: 18 }}>logout</span>
                                 Se déconnecter
                             </DropdownMenuItem>
                         </DropdownMenuGroup>
                     </DropdownMenuContent>
                 </DropdownMenu>
             </SidebarMenuItem>
+
+            <AlertDialog open={confirmationOuverte} onOpenChange={setConfirmationOuverte}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Se déconnecter ?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Tu devras te reconnecter pour accéder à nouveau à Svasta Manager.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Annuler</AlertDialogCancel>
+                        <AlertDialogAction onClick={seDeconnecter}>Se déconnecter</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </SidebarMenu>
     );
 }

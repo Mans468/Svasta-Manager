@@ -3,95 +3,86 @@
 import interactionPlugin from "@fullcalendar/interaction";
 import FullCalendar from "@fullcalendar/react";
 import timeGridPlugin from "@fullcalendar/timegrid";
-import { useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 
 import { AgendaFab } from "@/components/agenda/agenda-fab";
-import {
-    EventInfoDialog,
-    type AgendaEventInfo,
-} from "@/components/agenda/event-info-dialog";
+import { CreateEventDialog } from "@/components/agenda/create-event-dialog";
+import { EventInfoDialog } from "@/components/agenda/event-info-dialog";
 import { PageHeader } from "@/components/layout/page-header";
+import { SearchSelect } from "@/components/shared/search-select";
+import { COULEUR_PAR_TYPE, type CalendarEvent, type EvenementType } from "@/lib/agenda/types";
+import { MOCK_EVENTS } from "@/lib/agenda/mock-events";
+import { mockEmployes, mockMedecins, mockResidents, nomComplet } from "@/lib/mock-data";
 
-type EvenementType = "activite" | "reunion" | "rendez-vous";
+interface OptionFiltre {
+    id: string;
+    type: "resident" | "employe" | "medecin";
+    nom: string;
+}
 
-const couleurParType: Record<EvenementType, string> = {
-    activite: "#dbeafe",
-    reunion: "#fde8cf",
-    "rendez-vous": "#d1fae5",
-};
-
-const evenements = [
-    {
-        id: "1",
-        title: "Réunion",
-        start: "2026-09-01T05:00:00",
-        end: "2026-09-01T06:00:00",
-        type: "reunion" as EvenementType,
-        description: "Point quotidien de l'équipe éducative.",
-        lieu: "Salle de réunion",
-        participants: ["Jean Marc", "Sarah Marc"],
-    },
-    {
-        id: "2",
-        title: "Parc Astérix",
-        start: "2026-09-01T06:00:00",
-        end: "2026-09-01T10:00:00",
-        type: "activite" as EvenementType,
-        description: "Sortie encadrée au parc, transport en navette.",
-        lieu: "Parc Astérix",
-        participants: ["19 résidents", "4 éducateurs"],
-    },
-    {
-        id: "3",
-        title: "Réunion Administratif",
-        start: "2026-09-02T06:00:00",
-        end: "2026-09-02T07:00:00",
-        type: "reunion" as EvenementType,
-        description: "Point sur les dossiers administratifs en cours.",
-        lieu: "Bureau du Directeur",
-        participants: ["Dilan Smith"],
-    },
-    {
-        id: "4",
-        title: "Dr. Schmit",
-        start: "2026-09-04T06:00:00",
-        end: "2026-09-04T08:00:00",
-        type: "rendez-vous" as EvenementType,
-        description: "Consultation généraliste.",
-        lieu: "Cabinet Dr. Schmit",
-        participants: ["Jean Malik"],
-    },
+const OPTIONS_FILTRE: OptionFiltre[] = [
+    ...mockResidents.map((r) => ({ id: r.id, type: "resident" as const, nom: `${nomComplet(r)} (résident)` })),
+    ...mockEmployes.map((e) => ({ id: e.id, type: "employe" as const, nom: `${nomComplet(e)} (employé)` })),
+    ...mockMedecins.map((m) => ({ id: m.id, type: "medecin" as const, nom: `${nomComplet(m)} (médecin)` })),
 ];
 
-function formatDate(start: string, end: string) {
-    const d = new Date(start);
-    const dateStr = d.toLocaleDateString("fr-BE", {
-        day: "2-digit",
-        month: "long",
-        year: "numeric",
-    });
-    const heureDebut = d.toLocaleTimeString("fr-BE", {
-        hour: "2-digit",
-        minute: "2-digit",
-    });
-    const heureFin = new Date(end).toLocaleTimeString("fr-BE", {
-        hour: "2-digit",
-        minute: "2-digit",
-    });
-    return `${dateStr} · ${heureDebut} - ${heureFin}`;
+function useIsMobile() {
+    const [isMobile, setIsMobile] = useState(false);
+    useEffect(() => {
+        const mq = window.matchMedia("(max-width: 640px)");
+        setIsMobile(mq.matches);
+        const listener = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+        mq.addEventListener("change", listener);
+        return () => mq.removeEventListener("change", listener);
+    }, []);
+    return isMobile;
 }
 
 export default function Page() {
+    const router = useRouter();
     const calendarRef = useRef<FullCalendar | null>(null);
+    const isMobile = useIsMobile();
     const [titre, setTitre] = useState("");
-    const [evenementSelectionne, setEvenementSelectionne] =
-        useState<AgendaEventInfo | null>(null);
+    const [evenements, setEvenements] = useState<CalendarEvent[]>(MOCK_EVENTS);
+    const [evenementSelectionne, setEvenementSelectionne] = useState<CalendarEvent | null>(null);
+    const [typeEnCreation, setTypeEnCreation] = useState<EvenementType | null>(null);
+    const [evenementEnEdition, setEvenementEnEdition] = useState<CalendarEvent | null>(null);
+    const [filtre, setFiltre] = useState<OptionFiltre | null>(null);
 
-    function naviguer(direction: "prev" | "next") {
+    // La vue change avec la taille d'écran (semaine illisible sur mobile) : on
+    // pilote l'API FullCalendar directement plutôt que de démonter/remonter le composant.
+    useEffect(() => {
         const api = calendarRef.current?.getApi();
         if (!api) return;
-        if (direction === "prev") api.prev();
-        else api.next();
+        api.changeView(isMobile ? "timeGridDay" : "timeGridWeek");
+    }, [isMobile]);
+
+    function naviguer(direction: "prev" | "next") {
+        calendarRef.current?.getApi()?.[direction === "prev" ? "prev" : "next"]();
+    }
+
+    const evenementsFiltres = filtre
+        ? evenements.filter((e) => {
+              if (filtre.type === "resident") return e.residentIds.includes(filtre.id);
+              if (filtre.type === "employe") return e.employeIds.includes(filtre.id);
+              return e.medecinId === filtre.id;
+          })
+        : evenements;
+
+    function ouvrirCreation(type: EvenementType | "navette") {
+        if (type === "navette") {
+            router.push("/navettes");
+            return;
+        }
+        setTypeEnCreation(type);
+    }
+
+    function sauvegarderEvenement(evenement: CalendarEvent) {
+        setEvenements((prev) => {
+            const existe = prev.some((e) => e.id === evenement.id);
+            return existe ? prev.map((e) => (e.id === evenement.id ? evenement : e)) : [...prev, evenement];
+        });
     }
 
     return (
@@ -99,67 +90,56 @@ export default function Page() {
             <PageHeader
                 title="Agenda"
                 toolbar={
-                    <div className="flex items-center gap-3">
-                        <button
-                            type="button"
-                            onClick={() => naviguer("prev")}
-                            className="flex h-9 w-9 items-center justify-center rounded-full border hover:bg-muted"
-                        >
-                            <span
-                                className="material-symbols-rounded"
-                                style={{ fontSize: 18 }}
-                            >
-                                arrow_back
-                            </span>
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => naviguer("next")}
-                            className="flex h-9 w-9 items-center justify-center rounded-full border hover:bg-muted"
-                        >
-                            <span
-                                className="material-symbols-rounded"
-                                style={{ fontSize: 18 }}
-                            >
-                                arrow_forward
-                            </span>
-                        </button>
-                        <span className="text-lg font-medium capitalize">{titre}</span>
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                            <button type="button" onClick={() => naviguer("prev")} className="flex h-9 w-9 items-center justify-center rounded-full border hover:bg-muted">
+                                <span className="material-symbols-rounded" style={{ fontSize: 18 }}>arrow_back</span>
+                            </button>
+                            <button type="button" onClick={() => naviguer("next")} className="flex h-9 w-9 items-center justify-center rounded-full border hover:bg-muted">
+                                <span className="material-symbols-rounded" style={{ fontSize: 18 }}>arrow_forward</span>
+                            </button>
+                            <span className="text-base font-medium capitalize sm:text-lg">{titre}</span>
+                        </div>
+
+                        <div className="w-full sm:w-64">
+                            <SearchSelect
+                                options={OPTIONS_FILTRE}
+                                value={filtre}
+                                onValueChange={setFiltre}
+                                getId={(o) => `${o.type}:${o.id}`}
+                                getLabel={(o) => o.nom}
+                                placeholder="Tout le monde"
+                            />
+                        </div>
                     </div>
                 }
             />
 
-            <div className="agenda-calendar flex-1 overflow-auto px-6 pb-6">
+            <div className="agenda-calendar flex-1 overflow-auto px-3 pb-6 sm:px-6">
                 <FullCalendar
                     ref={calendarRef}
                     plugins={[timeGridPlugin, interactionPlugin]}
-                    initialView="timeGridWeek"
+                    initialView={isMobile ? "timeGridDay" : "timeGridWeek"}
                     headerToolbar={false}
                     allDaySlot={false}
                     nowIndicator
                     height="100%"
-                    events={evenements.map((e) => ({
+                    locale="fr"
+                    slotDuration={isMobile ? "01:00:00" : "00:30:00"}
+                    slotLabelFormat={{ hour: "2-digit", minute: "2-digit", hour12: false }}
+                    eventTimeFormat={{ hour: "2-digit", minute: "2-digit", hour12: false }}
+                    events={evenementsFiltres.map((e) => ({
                         id: e.id,
-                        title: e.title,
+                        title: e.titre,
                         start: e.start,
                         end: e.end,
-                        backgroundColor: couleurParType[e.type],
+                        backgroundColor: COULEUR_PAR_TYPE[e.type],
                         borderColor: "transparent",
                         textColor: "#18181b",
                     }))}
                     eventClick={(info) => {
-                        const evenement = evenements.find(
-                            (e) => e.id === info.event.id,
-                        );
-                        if (!evenement) return;
-
-                        setEvenementSelectionne({
-                            titre: evenement.title,
-                            description: evenement.description,
-                            date: formatDate(evenement.start, evenement.end),
-                            lieu: evenement.lieu,
-                            participants: evenement.participants,
-                        });
+                        const evenement = evenements.find((e) => e.id === info.event.id);
+                        if (evenement) setEvenementSelectionne(evenement);
                     }}
                     datesSet={(arg) => setTitre(arg.view.title)}
                 />
@@ -167,10 +147,21 @@ export default function Page() {
 
             <EventInfoDialog
                 event={evenementSelectionne}
-                onOpenChange={(open) => !open && setEvenementSelectionne(null)}
+                onOpenChange={(o) => !o && setEvenementSelectionne(null)}
+                onModifier={(evenement) => {
+                    setEvenementSelectionne(null);
+                    setEvenementEnEdition(evenement);
+                }}
             />
 
-            <AgendaFab />
+            <CreateEventDialog
+                type={evenementEnEdition?.type ?? typeEnCreation}
+                evenementExistant={evenementEnEdition}
+                onClose={() => { setTypeEnCreation(null); setEvenementEnEdition(null); }}
+                onCreate={sauvegarderEvenement}
+            />
+
+            <AgendaFab onSelect={ouvrirCreation} />
         </div>
     );
 }

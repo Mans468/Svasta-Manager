@@ -1,8 +1,11 @@
 allowBuilds:
   '@prisma/engines': true
+  bufferutil: true
+  core-js: true
   esbuild: false
   msgpackr-extract: false
   prisma: true
   sharp: false
   unrs-resolver: false
+  utf-8-validate: true
   workerd: false

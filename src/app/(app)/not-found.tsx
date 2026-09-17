@@ -16,15 +16,12 @@ export default function NotFound() {
             <div className="flex flex-col gap-1">
                 <h1 className="text-2xl font-semibold">Page introuvable</h1>
                 <p className="text-sm text-muted-foreground">
-                    Cette page n&apos;existe pas — vérifie l&apos;URL ou repars
-                    de l&apos;agenda.
+                    Cette page n&apos;existe pas - vérifie l&apos;URL ou repars de
+                    l&apos;agenda.
                 </p>
             </div>
 
-            <Link
-                href="/"
-                className={cn(buttonVariants({ variant: "default" }))}
-            >
+            <Link href="/" className={cn(buttonVariants({ variant: "default" }))}>
                 Retour à l&apos;agenda
             </Link>
         </div>

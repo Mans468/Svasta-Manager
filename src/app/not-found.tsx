@@ -20,10 +20,7 @@ export default function NotFound() {
                 </p>
             </div>
 
-            <Link
-                href="/"
-                className={cn(buttonVariants({ variant: "default" }))}
-            >
+            <Link href="/" className={cn(buttonVariants({ variant: "default" }))}>
                 Retour à l&apos;accueil
             </Link>
         </div>
