@@ -124,7 +124,7 @@ export function NavUser({ user }: NavUserProps) {
                             <DropdownMenuItem
                                 variant="destructive"
                                 className="flex items-center gap-2"
-                                onSelect={() => setConfirmationOuverte(true)}
+                                onClick={() => setConfirmationOuverte(true)}
                             >
                                 <span className="material-symbols-rounded shrink-0 leading-none" style={{ fontSize: 18 }}>logout</span>
                                 Se déconnecter

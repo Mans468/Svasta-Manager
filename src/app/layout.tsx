@@ -1,4 +1,5 @@
 import { ClerkProvider } from "@clerk/nextjs";
+import { frFR } from "@clerk/localizations";
 import { shadcn } from "@clerk/ui/themes";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Inter } from "next/font/google";
@@ -45,6 +46,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             </head>
             <body className="min-h-full flex flex-col">
                 <ClerkProvider
+                    localization={frFR}
                     appearance={{
                         theme: shadcn,
                         variables: {

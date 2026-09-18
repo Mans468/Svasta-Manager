@@ -99,7 +99,7 @@ export default function CaravaneSheet({
                 </SheetHeader>
 
                 <div className="flex flex-col gap-6 px-4">
-                    {/* Directeur uniquement */}
+                    {/* Administrateur uniquement */}
                     <div className="flex items-center justify-between">
                         <span className="text-sm font-medium">Hors-service</span>
                         <Switch checked={horsService} onCheckedChange={setHorsService} />
@@ -128,7 +128,7 @@ export default function CaravaneSheet({
                     <div className="flex flex-col gap-2">
                         <div className="flex items-center justify-between">
                             <h3 className="text-sm font-medium">Résidents assignés</h3>
-                            {/* Directeur ou éducateur responsable */}
+                            {/* Administrateur ou éducateur responsable */}
                             <Button size="sm" variant="outline" onClick={() => setDialogAjoutResident(true)}>+ Ajouter</Button>
                         </div>
                         {residentsAssignes.map((resident) => (
@@ -145,7 +145,7 @@ export default function CaravaneSheet({
                     <div className="flex flex-col gap-2">
                         <div className="flex items-center justify-between">
                             <h3 className="text-sm font-medium">Éducateurs responsables</h3>
-                            {/* Directeur uniquement */}
+                            {/* Administrateur uniquement */}
                             <Button size="sm" variant="outline" onClick={() => setDialogAjoutResponsable(true)}>+ Ajouter</Button>
                         </div>
                         <div className="flex flex-wrap gap-2">

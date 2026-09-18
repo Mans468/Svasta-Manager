@@ -10,7 +10,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { mockCaravanes, mockEcoles, type MockCaravane, type MockEcole } from "@/lib/mock-data";
+import { mockCaravanes, mockEcoles, type MockCaravane, type MockEcole, type MockResident } from "@/lib/mock-data";
 
 export const STATUTS_PROCEDURE = [
     "En procédure (annexe 26)",
@@ -45,6 +45,25 @@ export function valeursResidentVides(): ResidentFormValues {
         nom: "", prenom: "", dateNaissance: "", paysOrigine: "", langues: "", raisonRefuge: "",
         statutProcedure: STATUTS_PROCEDURE[0], statutResidence: "Présent", caravane: null, ecole: null,
         occupation: "", email: "", telephone: "", numeroRegistre: "",
+    };
+}
+
+export function valeursDepuisResident(resident: MockResident): ResidentFormValues {
+    return {
+        nom: resident.nom,
+        prenom: resident.prenom,
+        dateNaissance: resident.dateNaissance,
+        paysOrigine: resident.paysOrigine,
+        langues: resident.langues,
+        raisonRefuge: resident.raisonRefuge,
+        statutProcedure: resident.statutProcedure,
+        statutResidence: resident.statutResidence,
+        caravane: mockCaravanes.find((c) => c.id === resident.caravaneId) ?? null,
+        ecole: mockEcoles.find((e) => e.id === resident.ecoleId) ?? null,
+        occupation: resident.occupation,
+        email: resident.email,
+        telephone: resident.telephone,
+        numeroRegistre: resident.numeroRegistre,
     };
 }
 

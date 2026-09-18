@@ -17,6 +17,7 @@ import {
 import { Button } from "@/components/ui/button";
 import {
     Dialog,
+    DialogClose,
     DialogContent,
     DialogFooter,
     DialogHeader,
@@ -175,28 +176,36 @@ export default function Page() {
             </div>
 
             <Dialog open={entreeOuverte !== null} onOpenChange={(o) => !o && setEntreeOuverte(null)}>
-                <DialogContent>
-                    <DialogHeader className="flex-row items-center justify-between">
-                        <DialogTitle>{modeEdition ? "Modifier la note" : entreeOuverte?.titre}</DialogTitle>
-                        {!modeEdition && (
-                            <div className="flex gap-1">
-                                <Button variant="ghost" size="sm" onClick={() => setModeEdition(true)}>
-                                    <span className="material-symbols-rounded" style={{ fontSize: 16 }}>edit</span>
-                                    Modifier
-                                </Button>
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="text-destructive hover:text-destructive"
-                                    disabled={!peutSupprimer}
-                                    title={!peutSupprimer ? "Une note ne peut être supprimée que dans les 24h suivant sa création." : undefined}
-                                    onClick={() => setConfirmSuppression(true)}
-                                >
-                                    <span className="material-symbols-rounded" style={{ fontSize: 16 }}>delete</span>
-                                    Supprimer
-                                </Button>
-                            </div>
-                        )}
+                <DialogContent showCloseButton={false}>
+                    <DialogHeader className="flex-row items-center justify-between gap-3">
+                        <DialogTitle className="truncate">{modeEdition ? "Modifier la note" : entreeOuverte?.titre}</DialogTitle>
+                        <div className="flex shrink-0 items-center gap-1">
+                            {!modeEdition && (
+                                <>
+                                    <Button variant="ghost" size="sm" onClick={() => setModeEdition(true)}>
+                                        <span className="material-symbols-rounded" style={{ fontSize: 16 }}>edit</span>
+                                        Modifier
+                                    </Button>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="text-destructive hover:text-destructive"
+                                        disabled={!peutSupprimer}
+                                        title={!peutSupprimer ? "Une note ne peut être supprimée que dans les 24h suivant sa création." : undefined}
+                                        onClick={() => setConfirmSuppression(true)}
+                                    >
+                                        <span className="material-symbols-rounded" style={{ fontSize: 16 }}>delete</span>
+                                        Supprimer
+                                    </Button>
+                                </>
+                            )}
+                            <DialogClose
+                                render={<button type="button" title="Fermer" />}
+                                className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted"
+                            >
+                                <span className="material-symbols-rounded" style={{ fontSize: 20 }}>close</span>
+                            </DialogClose>
+                        </div>
                     </DialogHeader>
 
                     {modeEdition ? (

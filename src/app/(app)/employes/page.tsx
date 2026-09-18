@@ -31,13 +31,13 @@ import {
 import { mockEmployes, type MockEmploye } from "@/lib/mock-data";
 
 const STYLE_ROLE: Record<string, string> = {
-    Directeur: "bg-rose-100 text-rose-700 hover:bg-rose-100",
+    Administrateur: "bg-rose-100 text-rose-700 hover:bg-rose-100",
     Éducateur: "bg-blue-100 text-blue-700 hover:bg-blue-100",
     Infirmier: "bg-emerald-100 text-emerald-700 hover:bg-emerald-100",
     Assistant: "bg-violet-100 text-violet-700 hover:bg-violet-100",
 };
 
-const ROLES = ["Directeur", "Éducateur", "Infirmier", "Assistant"] as const;
+const ROLES = ["Administrateur", "Éducateur", "Infirmier", "Assistant"] as const;
 
 const FILTER_FIELDS: FilterField[] = [
     { key: "role", label: "Rôle", options: ROLES.map((r) => ({ value: r, label: r })) },

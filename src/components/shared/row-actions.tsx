@@ -25,10 +25,8 @@ interface RowActionsProps {
     onView?: () => void;
     onEdit?: () => void;
     onDelete?: () => void;
-    /** Si vrai, "Supprimer" est désactivé (ex. résident, événement terminé). */
     deleteBlocked?: boolean;
     deleteBlockedReason?: string;
-    /** Utilisé dans la confirmation : "cette activité", "ce résident"... */
     entityLabel?: string;
 }
 
@@ -44,9 +42,17 @@ export function RowActions({
     const [confirmOuvert, setConfirmOuvert] = useState(false);
 
     return (
-        <div onClick={(e) => e.stopPropagation()}>
+        <>
             <DropdownMenu>
-                <DropdownMenuTrigger render={<button type="button" title="Plus d'actions" />}>
+                <DropdownMenuTrigger
+                    render={
+                        <button
+                            type="button"
+                            title="Plus d'actions"
+                            onClick={(e) => e.stopPropagation()}
+                        />
+                    }
+                >
                     <span className="material-symbols-rounded text-muted-foreground" style={{ fontSize: 18 }}>
                         more_vert
                     </span>
@@ -54,8 +60,16 @@ export function RowActions({
                 <DropdownMenuContent align="end">
                     {(onView || onEdit) && (
                         <DropdownMenuGroup>
-                            {onView && <DropdownMenuItem onSelect={onView}>Voir la fiche</DropdownMenuItem>}
-                            {onEdit && <DropdownMenuItem onSelect={onEdit}>Modifier la fiche</DropdownMenuItem>}
+                            {onView && (
+                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onView(); }}>
+                                    Voir la fiche
+                                </DropdownMenuItem>
+                            )}
+                            {onEdit && (
+                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit(); }}>
+                                    Modifier la fiche
+                                </DropdownMenuItem>
+                            )}
                         </DropdownMenuGroup>
                     )}
                     {onDelete && (
@@ -65,7 +79,7 @@ export function RowActions({
                                 <DropdownMenuItem
                                     variant="destructive"
                                     disabled={deleteBlocked}
-                                    onSelect={() => setConfirmOuvert(true)}
+                                    onClick={(e) => { e.stopPropagation(); setConfirmOuvert(true); }}
                                     title={deleteBlocked ? deleteBlockedReason : undefined}
                                 >
                                     Supprimer la fiche
@@ -88,7 +102,8 @@ export function RowActions({
                         <AlertDialogFooter>
                             <AlertDialogCancel>Annuler</AlertDialogCancel>
                             <AlertDialogAction
-                                onClick={() => {
+                                onClick={(e) => {
+                                    e.stopPropagation();
                                     onDelete();
                                     setConfirmOuvert(false);
                                 }}
@@ -99,6 +114,6 @@ export function RowActions({
                     </AlertDialogContent>
                 </AlertDialog>
             )}
-        </div>
+        </>
     );
 }

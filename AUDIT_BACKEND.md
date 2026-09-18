@@ -39,6 +39,10 @@ Chaque page a une fonction `creer()`/`ajouter()`/`enregistrer()`/`supprimer()` q
 
 `app/api/webhooks/clerk/route.ts` est prêt mais désactivé en pratique (le `findUnique` Prisma est commenté). Décommenter une fois Prisma branché, ajouter `CLERK_WEBHOOK_SIGNING_SECRET` dans `.env`, et exclure `/api/webhooks(.*)` dans `middleware.ts`.
 
+## Audit boutons (fait)
+
+Grep systématique sur `<Button>` sans handler, `href="#"`, `onClick={() => {}}` : un seul bouton non câblé trouvé et corrigé ("Ajouter" sur Écoles). Le reste est relié soit à une navigation, soit à un dialog/state local.
+
 ## Ordre suggéré pour brancher le backend
 
 1. Ajuster le schema (section 1), migration.

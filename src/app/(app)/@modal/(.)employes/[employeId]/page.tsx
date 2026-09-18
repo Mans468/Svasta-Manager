@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/sheet";
 import { mockEmployes, nomComplet } from "@/lib/mock-data";
 
-const ROLES = ["Directeur", "Éducateur", "Infirmier", "Assistant"] as const;
+const ROLES = ["Administrateur", "Éducateur", "Infirmier", "Assistant"] as const;
 
 export default function EmployeSheet({
     params,
@@ -58,7 +58,7 @@ export default function EmployeSheet({
                             <Separator />
 
                             <div className="flex flex-col gap-3">
-                                {/* Directeur uniquement */}
+                                {/* Administrateur uniquement */}
                                 <Label>Rôles (cumulables)</Label>
                                 {ROLES.map((role) => (
                                     <div key={role} className="flex items-center gap-2">

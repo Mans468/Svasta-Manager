@@ -9,7 +9,7 @@ import type { NextRequest } from "next/server";
  *
  * 1. Le sign-up Clerk reste ouvert à tout le monde.
  * 2. Ce webhook écoute "user.created" : dès qu'un compte est créé, on vérifie
- *    si son email correspond à un Employe déjà créé par le Directeur en base.
+ *    si son email correspond à un Employe déjà créé par l'Administrateur en base.
  * 3. Si oui -> on ne fait rien, le compte est légitime.
  * 4. Si non -> on supprime IMMÉDIATEMENT le compte Clerk fraîchement créé.
  *    La personne est déconnectée et ne peut plus se reconnecter avec cet email.

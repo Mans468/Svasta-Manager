@@ -41,7 +41,6 @@ const data = {
             title: "Événements",
             items: [
                 { title: "Activités", icon: "family_link", url: "/activites" },
-                { title: "Réunions", icon: "co_present", url: "/reunions" },
                 { title: "Journal", icon: "book_ribbon", url: "/journal" },
                 {
                     title: "Travaux rémunérés",

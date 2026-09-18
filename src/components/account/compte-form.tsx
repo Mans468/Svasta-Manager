@@ -13,7 +13,7 @@ const COMPTE_INITIAL = {
     nom: "Dilan Smith",
     email: "dilan.smith@svasta.be",
     telephone: "+32 470 12 34 56",
-    roles: ["Directeur"],
+    roles: ["Administrateur"],
 };
 
 export function CompteForm() {

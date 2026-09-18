@@ -118,7 +118,7 @@ export default function Page() {
                             const resident = mockResidents.find((r) => r.id === travail.residentId);
                             const termine = estPasse(travail.date);
                             return (
-                                <TableRow key={travail.id} className="group">
+                                <TableRow key={travail.id} className="group cursor-pointer" onClick={() => router.push(`/travaux/${travail.id}`)}>
                                     <TableCell>{travail.titre}</TableCell>
                                     <TableCell>{resident && <PersonLink id={resident.id} nom={nomComplet(resident)} type="resident" />}</TableCell>
                                     <TableCell>{formatDateFr(travail.date)}</TableCell>

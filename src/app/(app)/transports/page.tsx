@@ -31,8 +31,19 @@ import {
 } from "@/components/ui/table";
 import { mockResidents, type MockResident } from "@/lib/mock-data";
 
+interface LigneTransport {
+    id: string;
+    residentId: string;
+    type: string;
+    moyen: string;
+    reference: string;
+    montant: string;
+    statut: string;
+    expire?: string;
+}
+
 // TODO: remplacer par un vrai fetch une fois le backend branché
-const LIGNES_INITIALES = [
+const LIGNES_INITIALES: LigneTransport[] = [
     { id: "1", residentId: "1", type: "Ticket", moyen: "Train", reference: "1647", montant: "-", statut: "Attribué" },
     { id: "2", residentId: "2", type: "Ticket", moyen: "Bus TEC", reference: "4895", montant: "-", statut: "Attribué" },
     { id: "3", residentId: "3", type: "Abonnement", moyen: "Bus TEC", reference: "-", montant: "12.00 €", statut: "Actif", expire: "17/08/2026" },
@@ -47,13 +58,15 @@ const FILTER_FIELDS: FilterField[] = [
 const PAGE_SIZE = 10;
 
 export default function Page() {
-    const [lignes, setLignes] = useState(LIGNES_INITIALES);
+    const [lignes, setLignes] = useState<LigneTransport[]>(LIGNES_INITIALES);
     const [filtres, setFiltres] = useState<Record<string, string>>({});
     const [page, setPage] = useState(1);
+
     const [dialogOuvert, setDialogOuvert] = useState(false);
+    const [ligneEnEdition, setLigneEnEdition] = useState<LigneTransport | null>(null);
     const [resident, setResident] = useState<MockResident | null>(null);
     const [reference, setReference] = useState("");
-    const [raison, setRaison] = useState("");
+    const [montant, setMontant] = useState("");
 
     const filtrees = useMemo(() => {
         return lignes.filter((l) => {
@@ -65,16 +78,39 @@ export default function Page() {
 
     const { items, totalPages, currentPage } = paginate(filtrees, page, PAGE_SIZE);
 
-    function attribuer() {
-        if (!resident || !reference) return;
-        setLignes((prev) => [
-            { id: String(prev.length + 1), residentId: resident.id, type: "Ticket", moyen: "Train", reference, montant: "-", statut: "Attribué" },
-            ...prev,
-        ]);
+    function reinitialiser() {
         setResident(null);
         setReference("");
-        setRaison("");
+        setMontant("");
+        setLigneEnEdition(null);
+    }
+
+    function ouvrirCreation() {
+        reinitialiser();
+        setDialogOuvert(true);
+    }
+
+    function ouvrirEdition(ligne: LigneTransport) {
+        setResident(mockResidents.find((r) => r.id === ligne.residentId) ?? null);
+        setReference(ligne.reference);
+        setMontant(ligne.montant);
+        setLigneEnEdition(ligne);
+        setDialogOuvert(true);
+    }
+
+    function enregistrer() {
+        if (!resident) return;
+        if (ligneEnEdition) {
+            setLignes((prev) => prev.map((l) => (l.id === ligneEnEdition.id ? { ...l, residentId: resident.id, reference, montant } : l)));
+        } else {
+            if (!reference) return;
+            setLignes((prev) => [
+                { id: String(prev.length + 1), residentId: resident.id, type: "Ticket", moyen: "Train", reference, montant: montant || "-", statut: "Attribué" },
+                ...prev,
+            ]);
+        }
         setDialogOuvert(false);
+        reinitialiser();
     }
 
     return (
@@ -92,7 +128,7 @@ export default function Page() {
 
                         <div className="flex items-center justify-between gap-3">
                             <FiltersPopover fields={FILTER_FIELDS} values={filtres} onChange={(key, value) => { setFiltres((f) => ({ ...f, [key]: value })); setPage(1); }} onReset={() => setFiltres({})} />
-                            <Button onClick={() => setDialogOuvert(true)}>
+                            <Button onClick={ouvrirCreation}>
                                 <span className="material-symbols-rounded" style={{ fontSize: 16 }}>add</span>
                                 Ajouter
                             </Button>
@@ -129,6 +165,7 @@ export default function Page() {
                                     </TableCell>
                                     <TableCell>
                                         <RowActions
+                                            onEdit={() => ouvrirEdition(ligne)}
                                             onDelete={() => setLignes((prev) => prev.filter((l) => l.id !== ligne.id))}
                                             entityLabel="cette ligne"
                                         />
@@ -142,10 +179,10 @@ export default function Page() {
                 <TablePagination page={currentPage} totalPages={totalPages} basePath="/transports" />
             </div>
 
-            <Dialog open={dialogOuvert} onOpenChange={setDialogOuvert}>
+            <Dialog open={dialogOuvert} onOpenChange={(o) => { setDialogOuvert(o); if (!o) reinitialiser(); }}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>Attribuer un ticket / abonnement</DialogTitle>
+                        <DialogTitle>{ligneEnEdition ? "Modifier" : "Attribuer un ticket / abonnement"}</DialogTitle>
                     </DialogHeader>
                     <div className="flex flex-col gap-4">
                         <div className="flex flex-col gap-2">
@@ -157,13 +194,13 @@ export default function Page() {
                             <Input id="reference" value={reference} onChange={(e) => setReference(e.target.value)} placeholder="Ex. T-002" />
                         </div>
                         <div className="flex flex-col gap-2">
-                            <Label htmlFor="raison">Raison</Label>
-                            <Input id="raison" value={raison} onChange={(e) => setRaison(e.target.value)} />
+                            <Label htmlFor="montant">Montant</Label>
+                            <Input id="montant" value={montant} onChange={(e) => setMontant(e.target.value)} placeholder="Ex. 12.00 €" />
                         </div>
                     </div>
                     <DialogFooter>
                         <Button variant="outline" onClick={() => setDialogOuvert(false)}>Annuler</Button>
-                        <Button onClick={attribuer}>Attribuer</Button>
+                        <Button onClick={enregistrer}>{ligneEnEdition ? "Enregistrer" : "Attribuer"}</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>

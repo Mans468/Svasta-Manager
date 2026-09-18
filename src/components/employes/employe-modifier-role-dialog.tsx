@@ -14,7 +14,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { nomComplet, type MockEmploye } from "@/lib/mock-data";
 
-const ROLES = ["Directeur", "Éducateur", "Infirmier", "Assistant"] as const;
+const ROLES = ["Administrateur", "Éducateur", "Infirmier", "Assistant"] as const;
 
 interface EmployeModifierRoleDialogProps {
     employe: MockEmploye | null;
@@ -22,7 +22,7 @@ interface EmployeModifierRoleDialogProps {
     onSave: (roles: string[]) => void;
 }
 
-/** Modale focalisée : uniquement l'attribution des rôles (Directeur uniquement). */
+/** Modale focalisée : uniquement l'attribution des rôles (Administrateur uniquement). */
 export function EmployeModifierRoleDialog({ employe, onClose, onSave }: EmployeModifierRoleDialogProps) {
     const [roles, setRoles] = useState<string[]>([]);
 

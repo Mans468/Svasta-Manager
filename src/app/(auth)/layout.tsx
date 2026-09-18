@@ -1,9 +1,10 @@
 import type { ReactNode } from "react";
 
-export default async function AppLayout({ children }: { children: ReactNode }) {
+export default function AuthLayout({ children }: { children: ReactNode }) {
     return (
-        <main className="flex w-full flex-1 flex-col gap-4 bg-white px-4 py-4 dark:bg-black">
+        <div className="flex min-h-screen flex-col items-center justify-center gap-8 bg-zinc-100 p-6 dark:bg-zinc-950">
+            <span className="text-xl font-semibold tracking-tight">Svasta Manager</span>
             {children}
-        </main>
+        </div>
     );
 }

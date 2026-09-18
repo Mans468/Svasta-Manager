@@ -3,17 +3,18 @@
 import interactionPlugin from "@fullcalendar/interaction";
 import FullCalendar from "@fullcalendar/react";
 import timeGridPlugin from "@fullcalendar/timegrid";
-import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 import { AgendaFab } from "@/components/agenda/agenda-fab";
 import { CreateEventDialog } from "@/components/agenda/create-event-dialog";
 import { EventInfoDialog } from "@/components/agenda/event-info-dialog";
 import { PageHeader } from "@/components/layout/page-header";
+import { NavetteFormDialog } from "@/components/navettes/navette-form-dialog";
 import { SearchSelect } from "@/components/shared/search-select";
 import { COULEUR_PAR_TYPE, type CalendarEvent, type EvenementType } from "@/lib/agenda/types";
 import { MOCK_EVENTS } from "@/lib/agenda/mock-events";
 import { mockEmployes, mockMedecins, mockResidents, nomComplet } from "@/lib/mock-data";
+import { MOCK_NAVETTES } from "@/lib/mock-navettes";
 
 interface OptionFiltre {
     id: string;
@@ -40,7 +41,6 @@ function useIsMobile() {
 }
 
 export default function Page() {
-    const router = useRouter();
     const calendarRef = useRef<FullCalendar | null>(null);
     const isMobile = useIsMobile();
     const [titre, setTitre] = useState("");
@@ -49,6 +49,8 @@ export default function Page() {
     const [typeEnCreation, setTypeEnCreation] = useState<EvenementType | null>(null);
     const [evenementEnEdition, setEvenementEnEdition] = useState<CalendarEvent | null>(null);
     const [filtre, setFiltre] = useState<OptionFiltre | null>(null);
+    const [navettes, setNavettes] = useState(MOCK_NAVETTES);
+    const [dialogNavetteOuvert, setDialogNavetteOuvert] = useState(false);
 
     // La vue change avec la taille d'écran (semaine illisible sur mobile) : on
     // pilote l'API FullCalendar directement plutôt que de démonter/remonter le composant.
@@ -72,7 +74,7 @@ export default function Page() {
 
     function ouvrirCreation(type: EvenementType | "navette") {
         if (type === "navette") {
-            router.push("/navettes");
+            setDialogNavetteOuvert(true);
             return;
         }
         setTypeEnCreation(type);
@@ -162,6 +164,12 @@ export default function Page() {
             />
 
             <AgendaFab onSelect={ouvrirCreation} />
+
+            <NavetteFormDialog
+                open={dialogNavetteOuvert}
+                onClose={() => setDialogNavetteOuvert(false)}
+                onCreate={(navette) => setNavettes((prev) => [navette, ...prev])}
+            />
         </div>
     );
 }

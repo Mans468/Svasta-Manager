@@ -66,8 +66,8 @@ export interface MockEmploye {
 }
 
 export const mockEmployes: MockEmploye[] = [
-    { id: "1", nom: "Dupont", prenom: "Jean", roles: ["Directeur"], email: "dupontjean@svasta.be", telephone: "+32 470 12 34 56" },
-    { id: "2", nom: "Smith", prenom: "Dilan", roles: ["Directeur"], email: "dilansmith@svasta.be", telephone: "+32 470 12 34 57" },
+    { id: "1", nom: "Dupont", prenom: "Jean", roles: ["Administrateur"], email: "dupontjean@svasta.be", telephone: "+32 470 12 34 56" },
+    { id: "2", nom: "Smith", prenom: "Dilan", roles: ["Administrateur"], email: "dilansmith@svasta.be", telephone: "+32 470 12 34 57" },
     { id: "3", nom: "Marc", prenom: "Jean", roles: ["Éducateur"], email: "jeanmarc@svasta.be", telephone: "+32 470 12 34 58" },
     { id: "4", nom: "Marc", prenom: "Sarah", roles: ["Éducateur", "Infirmier"], email: "sarahmarc@svasta.be", telephone: "+32 470 12 34 59" },
     { id: "5", nom: "Petit", prenom: "Lucie", roles: ["Assistant"], email: "luciepetit@svasta.be", telephone: "+32 470 12 34 60" },

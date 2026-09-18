@@ -37,7 +37,7 @@ export const MOCK_EVENTS: CalendarEvent[] = [
         description: "Point sur les dossiers administratifs en cours.",
         start: "2026-09-15T09:00:00",
         end: "2026-09-15T10:00:00",
-        lieu: "Bureau du Directeur",
+        lieu: "Bureau de l'Administrateur",
         residentIds: [],
         employeIds: ["2"],
     },
